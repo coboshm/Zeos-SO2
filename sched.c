@@ -13,12 +13,10 @@ union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
 
-#if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-#endif 
 
 extern struct list_head blocked;
 
@@ -59,25 +57,26 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-	struct * list_head lh = list_first(&freequeue);
-	struct * task_struct tsk = list_head_to_task_struct(lh);
+	struct list_head * lh = list_first(&freequeue);
+	struct task_struct * tsk = list_head_to_task_struct(lh);
 	list_del(lh);
         tsk->PID = 0;
 	idle_task = tsk;
-	tsk[KERNEL_STACK_SIZE-1] = &cpu_idle;
-	tsk[KERNEL_STACK_SIZE-2] = 0;
-	pointer = &tsk[KERNEL_STACK_SIZE-2];
+	union task_union * tsku = (union task_union *)idle_task;
+	tsku->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
+	tsku->stack[KERNEL_STACK_SIZE-2] = 0;
+	idle_task->pointer = &tsku->stack[KERNEL_STACK_SIZE-2];
 }
 
 void init_task1(void)
 {
-	struct * list_head lh = list_first(&freequeue);
-	struct * task_struct tsk = list_head_to_task_struct(lh);
+	struct list_head * lh = list_first(&freequeue);
+	struct task_struct * tsk = list_head_to_task_struct(lh);
 	list_del(lh);
-	list_add(lh, &readyqueue);
         tsk->PID = 1;
 	set_user_pages(tsk);
-	tss.esp0 = &tsk[KERNEL_STACK_SIZE];
+	union task_union * tsku = (union task_union *)tsk;
+	tss.esp0 = &tsku->stack[KERNEL_STACK_SIZE];
 	set_cr3(tsk->dir_pages_baseAddr);
 }
 
@@ -89,6 +88,34 @@ void init_sched(){
     for (i = 0; i < NR_TASKS; ++i) {
         list_add(&(task[i].task.list), &freequeue);
     }
+}
+
+void inner_task_switch(union task_union*t){
+	void * old = current()->pointer;
+	void * new = (t->task).pointer;
+	__asm__ __volatile__(
+		"movl %%ebp,%0;"
+		"movl %1,%%esp;"
+		"popl %%ebp;"
+		"ret;"
+	:
+	: "g" (old), "g" (new)
+      );
+}
+
+void task_switch(union task_union*t){
+	
+       __asm__ __volatile__(
+		"pushl %esi;"
+		"pushl %edi;"
+		"pushl %ebx;"
+      );
+      inner_task_switch(t);
+      __asm__ __volatile__(
+		"popl %esi;"
+		"popl %edi;"
+		"popl %ebx;"
+      );
 }
 
 struct task_struct* current()
