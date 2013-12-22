@@ -9,7 +9,11 @@
 
 #include <mm.h>
 
+#include <capsaleres.h>
+
 #include <mm_address.h>
+
+#include <errno.h>
 
 #include <sched.h>
 
@@ -52,8 +56,22 @@ int sys_write(int fd, char * buffer, int size) {
       buffer: pointer to the bytes.
       size: number of bytes.
       return ’ Negative number in case of error (specifying the kind of error) and
-      the number of bytes written if OK.*/
+      the number of bytes written if OK.*/ç
 
-      if (fd != 1) return -1;
-      else if (size < 0) return -2;
+      // Checks the parametres
+      int check = check_fd(fd, ESCRIPTURA);
+      if(check != 0) return check;
+      if (buffer == NULL) return -EFAULT;
+      if (size < 0) return -EINVAL;
+
+
+      // MIRAR TEMA DE COPIAR DE UNA MEMORIA A UNA ALTRA
+      if(fd == 1) return sys_write_console(buffer, size);
+      return -ENODEV;
+
+}
+
+
+int sys_gettime() {
+      return zeos_ticks;
 }
