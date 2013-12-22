@@ -13,3 +13,4 @@ extern struct list_head readyqueue;
 extern TSS tss;
 extern struct task_struct * idle_task;
 extern int nextFreePID;
+extern int currentQuantum;

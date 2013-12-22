@@ -1,5 +1,6 @@
 /*
  * sched.c - initializes struct for task 0 anda task 1
+ *           and more functions
  */
 
 #include <sched.h>
@@ -9,6 +10,7 @@
 
 struct task_struct * idle_task;
 int nextFreePID = 2;
+int currentQuantum;
 
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
@@ -86,7 +88,7 @@ void init_sched(){
     INIT_LIST_HEAD(&readyqueue);
     INIT_LIST_HEAD(&freequeue);
     for (i = 0; i < NR_TASKS; ++i) {
-        list_add(&(task[i].task.list), &freequeue);
+        list_add_tail(&(task[i].task.list), &freequeue);
     }
 }
 
@@ -129,4 +131,32 @@ struct task_struct* current()
   );
   return (struct task_struct*)(ret_value&0xfffff000);
 }
+
+
+void sched_next_rr() {
+  
+}
+
+void update_current_state_rr(struct list_head *dest) {
+  struct task_struct * tsk = current();
+  struct list_head * lh = &tsk->list;
+  list_add_tail(lh, dest);
+}
+
+int needs_sched_rr(){
+  return currentQuantum == 0;
+}
+
+void update_sched_data_rr() {
+  --currentQuantum;
+}
+
+int get_quantum (struct task_struct *t) {
+  return t->quantum;
+}
+
+void set_quantum (struct task_struct *t, int new_quantum) {
+  t->quantum = new_quantum;
+}
+
 

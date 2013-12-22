@@ -83,15 +83,25 @@ int fork(void) {
     int ret;
 	__asm__ volatile(
 				"movl $2, %%eax;"
-	            "int $0x80;"
-	            "movl %%eax, %0;"
+	      "int $0x80;"
+        "movl %%eax, %0;"
 				:"=g" (ret)
-                :
-                : "ax"
+        :
+        : "ax"
 	);
 	return ret;
 }
 
+
+void exit(void) {
+	__asm__ volatile(
+				"movl $1, %%eax;"
+	      "int $0x80;"
+				:
+        :
+        : "ax"
+	);
+}
 
 long long int gettime() {
 	long long int ret = -1;

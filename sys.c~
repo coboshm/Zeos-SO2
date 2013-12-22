@@ -37,11 +37,16 @@ int sys_getpid()
 	return current()->PID;
 }
 
+
+int ret_from_fork() {
+  return 0;
+}
+
 int sys_fork()
 {
   int error = 0;
   int new_frames[NUM_PAG_DATA];
-  int pag, new_ph_pag;
+  int pag;
 
   if (list_empty(&freequeue)) return -1;  
   for (pag=0;pag<NUM_PAG_DATA;pag++){
@@ -67,25 +72,49 @@ int sys_fork()
   for (pag=0;pag<NUM_PAG_KERNEL + NUM_PAG_CODE;pag++){
     int frame = get_frame(tskc->dir_pages_baseAddr, pag);
     set_ss_pag(tsk->dir_pages_baseAddr, pag, frame);
-  }
-
-  int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 1;
-  for (pag=0;pag<NUM_PAG_DATA && error == 0;pag++){
-    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + NUM_PAG_CODE + pag, new_frames[pag]);
-    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_frames[pag]);
-    copy_data((tskc->dir_pages_baseAddr)[(NUM_PAG_KERNEL + NUM_PAG_CODE + pag)*PAGE_SIZE], (tskc->dir_pages_baseAddr)[(end + pag)*PAGE_SIZE], PAGE_SIZE);
-    del_ss_pag(tskc->dir_pages_baseAddr, end + pag);
+    
   }
   
+  int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 10;
+  for (pag=0;pag<NUM_PAG_DATA;pag++){
+    printk(" 1 ");
+    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + NUM_PAG_CODE + pag, new_frames[pag]);
+    printk(" 2 ");
+    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_frames[pag]);
+    printk(" 3 ");
+ //   copy_data((void*)((NUM_PAG_KERNEL + NUM_PAG_CODE + pag)*PAGE_SIZE), (void*)((end + pag)*PAGE_SIZE), PAGE_SIZE);
+    copy_data((void*)((PAG_LOG_INIT_DATA_P0 + pag)*PAGE_SIZE), (void*)((end + pag)*PAGE_SIZE), PAGE_SIZE);
+    printk(" 4 ");
+    del_ss_pag(tskc->dir_pages_baseAddr, end + pag);
+  }
+  printk("ok1");
+  
+  union task_union * tsku = (union task_union *)tsk;
+  int top = (unsigned long *)tsk->pointer - &tsku->stack[0];
+  tsku->stack[top] = &ret_from_fork;
+  tsku->stack[top-1] = 0;
+  tsk->pointer = &tsku->stack[top-1];
+  
   list_del(lh);
-  list_add(lh, &readyqueue);
+  list_add_tail(lh, &readyqueue);
 // ADD a sa ready
 
   return PID;
 }
 
+
 void sys_exit()
 {  
+  struct task_struct * tsk = current();
+ /* int pag;
+  for (pag = 0; pag < NUM_PAG_DATA; ++pag) {
+    free_frame(get_frame(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + NUM_PAG_CODE + pag));
+  }*/
+  free_user_pages(&tsk);
+  struct list_head * lh = &tsk->list;
+  list_add_tail(lh, &freequeue);
+  
+
 }
 
 
