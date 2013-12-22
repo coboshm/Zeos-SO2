@@ -58,16 +58,24 @@ int sys_write(int fd, char * buffer, int size) {
       return ’ Negative number in case of error (specifying the kind of error) and
       the number of bytes written if OK.*/
       // Checks the parametres
+      int size_original = size;
       int check = check_fd(fd, ESCRIPTURA);
       if(check != 0) return check;
       if (buffer == NULL) return -EFAULT;
       if (size < 0) return -EINVAL;
-
-
-      // MIRAR TEMA DE COPIAR DE UNA MEMORIA A UNA ALTRA
-      if(fd == 1) return sys_write_console(buffer, size);
-      return -ENODEV;
-
+      
+      char *buff[4];
+      int num = 0;
+      while(size >= 4) {
+      	check = copy_from_user(buffer, buff, 4);
+      	num += sys_write_console(buff, 4);
+	buffer += 4;
+	size -= 4;
+      }
+      check = copy_from_user(buffer, buff, size);
+      num += sys_write_console(buff, size);
+      if (num != size_original) return -ENODEV;
+      else return num;
 }
 
 

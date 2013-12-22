@@ -24,6 +24,17 @@ Byte inb (unsigned short port)
   return v;
 }
 
+void printblank()
+{
+    if (++x >= NUM_COLUMNS) x = 0;
+    char c = ' ';
+    __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c));
+    Word ch = (Word) (c & 0x00FF) | 0x0200;
+    DWord screen = 0xb8000 + (y * NUM_COLUMNS + x) * 2;
+    asm("movw %0, (%1)" : : "g"(ch), "g"(screen));
+}
+
+
 void printc(char c)
 {
      __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c));
@@ -31,6 +42,8 @@ void printc(char c)
   {
     x = 0;
     y=(y+1)%NUM_ROWS;
+    int i;
+    for (i = 0; i < 80; i++) printblank();
   }
   else
   {
@@ -40,6 +53,8 @@ void printc(char c)
     {
       x = 0;
       y=(y+1)%NUM_ROWS;
+      int i;
+      for (i = 0; i < 80; i++) printblank();
     }
     asm("movw %0, (%1)" : : "g"(ch), "g"(screen));
   }
