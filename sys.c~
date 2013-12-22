@@ -59,6 +59,8 @@ int sys_fork()
 
   struct list_head * lh = list_first(&freequeue);
 	struct task_struct * tsk = list_head_to_task_struct(lh);
+  
+  list_del(&tsk->list);
 
   struct task_struct * tskc = current();
   int PID = nextFreePID++;
@@ -71,34 +73,24 @@ int sys_fork()
   // CREAR COPIA KERNEL?????
   for (pag=0;pag<NUM_PAG_KERNEL + NUM_PAG_CODE;pag++){
     int frame = get_frame(tskc->dir_pages_baseAddr, pag);
-    set_ss_pag(tsk->dir_pages_baseAddr, pag, frame);
+    set_ss_pag(get_PT(tsk), pag, frame);
     
   }
   
-  int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 10;
+  int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 1;
   for (pag=0;pag<NUM_PAG_DATA;pag++){
-    printk(" 1 ");
-    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + NUM_PAG_CODE + pag, new_frames[pag]);
-    printk(" 2 ");
-    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_frames[pag]);
-    printk(" 3 ");
- //   copy_data((void*)((NUM_PAG_KERNEL + NUM_PAG_CODE + pag)*PAGE_SIZE), (void*)((end + pag)*PAGE_SIZE), PAGE_SIZE);
-    copy_data((void*)((PAG_LOG_INIT_DATA_P0 + pag)*PAGE_SIZE), (void*)((end + pag)*PAGE_SIZE), PAGE_SIZE);
-    printk(" 4 ");
+    set_ss_pag(get_PT(tsk), PAG_LOG_INIT_DATA_P0 + pag, new_frames[pag]);
+    set_ss_pag(get_PT(tskc), end + pag, new_frames[pag]);
+    copy_data((void*)((NUM_PAG_KERNEL + NUM_PAG_CODE + pag)*PAGE_SIZE), (void*)((end + pag)*PAGE_SIZE), PAGE_SIZE);
     del_ss_pag(tskc->dir_pages_baseAddr, end + pag);
   }
-  printk("ok1");
-  
-  union task_union * tsku = (union task_union *)tsk;
-  int top = (unsigned long *)tsk->pointer - &tsku->stack[0];
-  tsku->stack[top] = &ret_from_fork;
-  tsku->stack[top-1] = 0;
-  tsk->pointer = &tsku->stack[top-1];
-  
-  list_del(lh);
-  list_add_tail(lh, &readyqueue);
-// ADD a sa ready
 
+  union task_union * tsku = (union task_union *)tsk;
+  tsku->stack[KERNEL_STACK_SIZE-19] = &ret_from_fork;
+  tsku->stack[KERNEL_STACK_SIZE-20] = 0;
+  tsku.task->pointer = &tsku->stack[KERNEL_STACK_SIZE-20];
+
+  list_add_tail(&tsk->list, &readyqueue);
   return PID;
 }
 
