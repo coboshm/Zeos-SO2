@@ -48,12 +48,12 @@ int write(int fd, char *buffer, int size) {
      int ret = -1;
      __asm__ __volatile__ (
           "movl %1, %%ebx;"
-	  "movl %2, %%ecx;"
-	  "movl %3, %%edx;"
-	  "movl $4, %%eax;"
-	  "int $0x80;"
-	  "movl %%eax, %0;"
-	  : "=g" (ret)
+	      "movl %2, %%ecx;"
+	      "movl %3, %%edx;"
+	      "movl $4, %%eax;"
+	      "int $0x80;"
+	      "movl %%eax, %0;"
+	      : "=g" (ret)
           : "g" (fd), "g"(buffer), "g" (size)
           : "ax", "bx", "cx", "dx"
     );
@@ -63,6 +63,35 @@ int write(int fd, char *buffer, int size) {
 	return -1;
     }
 }
+
+
+int getpid(void) {
+    int ret;
+	__asm__ volatile(
+				"movl $20, %%eax;"
+	            "int $0x80;"
+	            "movl %%eax, %0;"
+				:"=g" (ret)
+                :
+                : "ax"
+	);
+	return ret;
+}
+
+
+int fork(void) {
+    int ret;
+	__asm__ volatile(
+				"movl $2, %%eax;"
+	            "int $0x80;"
+	            "movl %%eax, %0;"
+				:"=g" (ret)
+                :
+                : "ax"
+	);
+	return ret;
+}
+
 
 long long int gettime() {
 	long long int ret = -1;

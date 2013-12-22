@@ -39,10 +39,47 @@ int sys_getpid()
 
 int sys_fork()
 {
-  int PID=-1;
+  int error = 0;
 
-  // creates the child process
+  if (list_empty(&freequeue)) return -1;
+  struct list_head * lh = list_first(&freequeue);
+	struct task_struct * tsk = list_head_to_task_struct(lh);
+
+  struct task_struct * tskc = current();
+  int PID = nextFreePID++;
+  copy_data(tskc, tsk, KERNEL_STACK_SIZE);
+  tsk->PID = PID;
+  int retalloc = allocate_DIR(tsk);
+  if (retalloc < 0) return retalloc;
+
+  int pag, new_ph_pag;
+  for (pag=0;pag<NUM_PAG_KERNEL;pag++){
+    int frame = get_frame(tskc->dir_pages_baseAddr, pag);
+    set_ss_pag(tsk->dir_pages_baseAddr, pag, frame);
+  }
+
+  int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 1;
+  for (pag=0;pag<NUM_PAG_CODE && error == 0;pag++){
+	  new_ph_pag = alloc_frame();
+    if (new_ph_pag < 0) {
+      undo();
+      error = new_ph_pag;
+    }
+    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + pag, new_ph_pag);
+    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_ph_pag);
+    copy_data((tskc->dir_pages_baseAddr)[NUM_PAG_KERNEL + pag], (tskc->dir_pages_baseAddr)[end + pag], PAGE_SIZE);
+    del_ss_pag(tskc->dir_pages_baseAddr, end + pag);
+  }
   
+  for (pag=0;pag<NUM_PAG_DATA;pag++){
+	  new_ph_pag=alloc_frame();
+    if (new_ph_pag < 0) return new_ph_pag;
+  }
+    
+ 
+	list_del(lh);
+// ADD a sa ready
+
   return PID;
 }
 
