@@ -40,8 +40,18 @@ int sys_getpid()
 int sys_fork()
 {
   int error = 0;
+  int new_frames[NUM_PAG_DATA];
+  int pag, new_ph_pag;
 
-  if (list_empty(&freequeue)) return -1;
+  if (list_empty(&freequeue)) return -1;  
+  for (pag=0;pag<NUM_PAG_DATA;pag++){
+    new_frames[pag] = alloc_frame();
+    if (new_frames[pag] < 0) {
+      for (error = pag-1; error >= 0; --error) free_frame(new_frames[error]);
+      return new_frames[pag]; //Mirar quin error es    
+    }
+  }
+
   struct list_head * lh = list_first(&freequeue);
 	struct task_struct * tsk = list_head_to_task_struct(lh);
 
@@ -49,38 +59,33 @@ int sys_fork()
   int PID = nextFreePID++;
   copy_data(tskc, tsk, KERNEL_STACK_SIZE);
   tsk->PID = PID;
+
   int retalloc = allocate_DIR(tsk);
   if (retalloc < 0) return retalloc;
-
-  int pag, new_ph_pag;
-  for (pag=0;pag<NUM_PAG_KERNEL;pag++){
+  
+  // CREAR COPIA KERNEL?????
+  for (pag=0;pag<NUM_PAG_KERNEL + NUM_PAG_CODE;pag++){
     int frame = get_frame(tskc->dir_pages_baseAddr, pag);
     set_ss_pag(tsk->dir_pages_baseAddr, pag, frame);
   }
 
   int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 1;
-  for (pag=0;pag<NUM_PAG_CODE && error == 0;pag++){
-	  new_ph_pag = alloc_frame();
-    if (new_ph_pag < 0) {
-      undo();
-      error = new_ph_pag;
-    }
-    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + pag, new_ph_pag);
-    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_ph_pag);
-    copy_data((tskc->dir_pages_baseAddr)[NUM_PAG_KERNEL + pag], (tskc->dir_pages_baseAddr)[end + pag], PAGE_SIZE);
+  for (pag=0;pag<NUM_PAG_DATA && error == 0;pag++){
+    set_ss_pag(tsk->dir_pages_baseAddr, NUM_PAG_KERNEL + NUM_PAG_CODE + pag, new_frames[pag]);
+    set_ss_pag(tskc->dir_pages_baseAddr, end + pag, new_frames[pag]);
+    copy_data((tskc->dir_pages_baseAddr)[(NUM_PAG_KERNEL + NUM_PAG_CODE + pag)*PAGE_SIZE], (tskc->dir_pages_baseAddr)[(end + pag)*PAGE_SIZE], PAGE_SIZE);
     del_ss_pag(tskc->dir_pages_baseAddr, end + pag);
   }
   
-  for (pag=0;pag<NUM_PAG_DATA;pag++){
-	  new_ph_pag=alloc_frame();
-    if (new_ph_pag < 0) return new_ph_pag;
-  }
-    
- 
-	list_del(lh);
+  list_del(lh);
+  list_add(lh, &readyqueue);
 // ADD a sa ready
 
   return PID;
+}
+
+int ret_from_fork() {
+  return 0;
 }
 
 void sys_exit()
