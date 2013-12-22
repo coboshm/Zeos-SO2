@@ -50,3 +50,4 @@
  .long sys_ni_syscall
  .long sys_ni_syscall
  .long sys_ni_syscall
+MAX_SYSCALL = .-sys_call_table

@@ -97,5 +97,6 @@ emul: zeos.bin
 emuldbg: zeos.bin
 	bochs_nogdb -q -f .bochsrc
 
-
+libjp.a: 
+	ln -s E1/libjp1.a libjp.a
 

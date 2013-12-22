@@ -1,7 +1,6 @@
 #include <asm.h>
 #include <segment.h>
 
-#define MAX_SYSCALL = 40;
 
 ENTRY (sys_call_table)
 	.long sys_ni_syscall//0
