@@ -18,7 +18,6 @@ struct task_struct {
   int PID;			/* Process ID */
   page_table_entry * dir_pages_baseAddr;
   struct list_head list;
-  void * pointer;
 };
 
 union task_union {

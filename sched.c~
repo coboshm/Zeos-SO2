@@ -78,7 +78,6 @@ void init_task1(void)
         tsk->PID = 1;
 	set_user_pages(tsk);
 	tss.esp0 = &tsk[KERNEL_STACK_SIZE];
-	set_cr3(tsk->dir_pages_baseAddr);
 }
 
 

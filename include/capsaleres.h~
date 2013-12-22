@@ -10,4 +10,3 @@ void system_call_handler();
 extern long long int zeos_ticks;
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
-extern TSS tss;

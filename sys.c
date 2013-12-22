@@ -64,7 +64,7 @@ int sys_write(int fd, char * buffer, int size) {
       if (buffer == NULL) return -EFAULT;
       if (size < 0) return -EINVAL;
       
-      char *buff[4];
+      char buff[4];
       int num = 0;
       while(size >= 4) {
       	check = copy_from_user(buffer, buff, 4);
