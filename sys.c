@@ -84,12 +84,12 @@ int sys_fork()
 
   page_table_entry* taulaP_fill = get_PT(&tsku_fill->task);
   page_table_entry* taulaP_current = get_PT(&tsku_current->task);
-  //fem que el fill apunti a pagines de kernel i codi del pare
+
   for (pag=0;pag<NUM_PAG_KERNEL + NUM_PAG_CODE;pag++){
     int frame = get_frame(taulaP_current, pag);
     set_ss_pag(taulaP_fill, pag, frame);
   }
-  //Copiem les pagines de dades
+  
   int end = NUM_PAG_KERNEL + NUM_PAG_CODE + NUM_PAG_DATA + 1;
   for (pag=0;pag<NUM_PAG_DATA;pag++){
     set_ss_pag(taulaP_fill, NUM_PAG_KERNEL + NUM_PAG_CODE + pag, new_frames[pag]);
@@ -99,15 +99,15 @@ int sys_fork()
   }
   
   set_cr3(get_DIR(&tsku_current->task));
-  //Coloquem al fill les adreçes perque retorni el 0
+
   tsku_fill->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
   tsku_fill->stack[KERNEL_STACK_SIZE-19] = 0;
   tsku_fill->task.pointer = &tsku_fill->stack[KERNEL_STACK_SIZE-19];
 
-  //Assignem nou PID
+  
+   
   PID = nextFreePID;
   nextFreePID++;
-  //Actualitzem estats del fill
   tsku_fill->task.PID = PID;
   tsku_fill->task.estats.user_ticks = 0;
   tsku_fill->task.estats.system_ticks = 0;
@@ -118,7 +118,6 @@ int sys_fork()
   tsku_fill->task.estats.remaining_ticks = 0;
   tsku_fill->task.estat = ST_READY;	
   list_add_tail(&tsku_fill->task.list, &readyqueue);
-  
   actualitzar_sistema_usuari(current());
   return PID;
 
@@ -136,18 +135,15 @@ void sys_exit()
 
 int sys_get_stats(int pid,struct stats *st) {
   actualitzar_usuari_sistema(current());
-  //Comprovem que el punter st sigui correcte
-  if (!access_ok(VERIFY_WRITE, st,sizeof(struct stats))){
+  int i;
+  if (st == NULL || !access_ok(VERIFY_WRITE, st,sizeof(struct stats))){
 	  actualitzar_sistema_usuari(current());
 	  return -EFAULT;
   }
-  //Comprovem que el pid sigui un posible pid valid
   if (pid < 0) {
     actualitzar_sistema_usuari(current());
     return -EINVAL;
   }
-  //Recorrem totes les taskes per cercar el process en questio
-  int i;
   for (i = 0; i < NR_TASKS; ++i) {
     if (task[i].task.PID == pid && task[i].task.estat != ST_ZOMBIE) {
       copy_to_user(&task[i].task.estats,st,sizeof(struct stats));
@@ -179,15 +175,15 @@ int sys_write(int fd, char * buffer, int size) {
       while(size >= 4) {
       	check = copy_from_user(buffer, buff, 4);
       	num += sys_write_console(buff, 4);
-	      buffer += 4;
-	      size -= 4;
+	buffer += 4;
+	size -= 4;
       }
       check = copy_from_user(buffer, buff, size);
       num += sys_write_console(buff, size);
       if (num != size_original) return -ENODEV;
       else {
-	      actualitzar_sistema_usuari(current());
-	      return num;
+	 actualitzar_sistema_usuari(current());
+	 return num;
       }
 }
 

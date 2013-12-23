@@ -4,6 +4,10 @@ char buff[24];
 
 int pid;
 
+void perror(void) {
+	write(1,"Hi ha hagut un error",10);
+}
+
 int __attribute__ ((__section__(".text.main")))
   main(void)
 {
