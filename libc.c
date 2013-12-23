@@ -3,10 +3,20 @@
  */
 
 #include <libc.h>
-
 #include <types.h>
 
+
 int errno;
+
+
+void perror(void) {
+  char buffer[5];
+  itoa(errno,buffer);
+  write(1,"ERROR NUMERO: ",14);
+  write(1,buffer,5);
+  write(1,"\n",1);
+}
+
 
 void itoa(int a, char *b)
 {
@@ -89,7 +99,11 @@ int fork(void) {
         :
         : "ax"
 	);
-	return ret;
+	if(ret >= 0) return ret;
+    	else {
+		errno = -ret;
+		return -1;
+    	}
 }
 
 
@@ -112,12 +126,13 @@ int get_stats(int pid, struct stats *st) {
 	      "int $0x80;"
 	      "movl %%eax, %0;"
 	      : "=g" (ret)
-          : "g" (pid), "g"(st)
-          : "ax", "bx", "cx", "dx"
+        : "g" (pid), "g"(st)
+        : "ax", "bx", "cx", "dx"
     );
     if(ret >= 0) return ret;
     else {
-	    return -1;
+        errno = -ret;
+	      return -1;
     }
 }
 

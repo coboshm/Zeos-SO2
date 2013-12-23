@@ -95,7 +95,7 @@ void setIdt()
 void clock_routine()
 {
       ++zeos_ticks;
-      zeos_show_clock();
+      //zeos_show_clock();
       update_sched_data_rr();
       if (needs_sched_rr()) {
           //Canvi de contexte

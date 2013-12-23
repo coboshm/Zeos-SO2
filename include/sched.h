@@ -23,6 +23,7 @@ struct task_struct {
   void * pointer;
   unsigned int quantum;
   struct stats estats;
+  enum state_t estat;
 };
 
 union task_union {
