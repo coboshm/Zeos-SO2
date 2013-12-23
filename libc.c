@@ -103,6 +103,24 @@ void exit(void) {
 	);
 }
 
+int get_stats(int pid, struct stats *st) {
+     int ret = -1;
+     __asm__ __volatile__ (
+        "movl %1, %%ebx;"
+	      "movl %2, %%ecx;"
+	      "movl $35, %%eax;"
+	      "int $0x80;"
+	      "movl %%eax, %0;"
+	      : "=g" (ret)
+          : "g" (pid), "g"(st)
+          : "ax", "bx", "cx", "dx"
+    );
+    if(ret >= 0) return ret;
+    else {
+	    return -1;
+    }
+}
+
 long long int gettime() {
 	long long int ret = -1;
 	__asm__ __volatile__ (

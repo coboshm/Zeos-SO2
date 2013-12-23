@@ -96,13 +96,11 @@ void clock_routine()
 {
       ++zeos_ticks;
       zeos_show_clock();
-      if (zeos_ticks == 50) {
-        task_switch((union task_union *)list_head_to_task_struct(list_first(&readyqueue)));
-      }
-     
       update_sched_data_rr();
       if (needs_sched_rr()) {
-          //Canvi de contexte;
+          //Canvi de contexte
+          update_current_state_rr(&readyqueue);
+          sched_next_rr();
       }
 }
 

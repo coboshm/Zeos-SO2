@@ -8,6 +8,8 @@
 #include <io.h>
 #include <capsaleres.h>
 
+#define QUANTUM_DEFECTE 20
+
 struct task_struct * idle_task;
 int nextFreePID = 2;
 int currentQuantum;
@@ -68,6 +70,7 @@ void init_idle (void)
 	tsku->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 	tsku->stack[KERNEL_STACK_SIZE-2] = 0;
 	idle_task->pointer = &tsku->stack[KERNEL_STACK_SIZE-2];
+  tsku->task.quantum = QUANTUM_DEFECTE;
 }
 
 void init_task1(void)
@@ -75,8 +78,9 @@ void init_task1(void)
 	struct list_head * lh = list_first(&freequeue);
 	struct task_struct * tsk = list_head_to_task_struct(lh);
 	list_del(lh);
-    tsk->PID = 1;
+  tsk->PID = 1;
 	set_user_pages(tsk);
+  tsk->quantum = QUANTUM_DEFECTE;
 	union task_union * tsku = (union task_union *)tsk;
 	tss.esp0 = &tsku->stack[KERNEL_STACK_SIZE];
 	set_cr3(tsk->dir_pages_baseAddr);
@@ -133,15 +137,29 @@ struct task_struct* current()
 }
 
 
+/**
+  * Select the next proces to excecute, extract info from the ready queue and invoke context switch
+  */
 void sched_next_rr() {
-  
+  union task_union *tsku_next;
+  if (list_empty(&readyqueue)) {
+    tsku_next = (union task_union*)idle_task;
+  }else {
+    struct list_head * lh = list_first(&readyqueue);
+    tsku_next = (union task_union*)list_head_to_task_struct(lh);
+    list_del(lh);
+  }
+  currentQuantum = tsku_next->task.quantum;
+  task_switch(tsku_next);
 }
 
+// Actulatinza info des proces en execucio
 void update_current_state_rr(struct list_head *dest) {
   struct task_struct * tsk = current();
   struct list_head * lh = &tsk->list;
   list_add_tail(lh, dest);
 }
+
 
 int needs_sched_rr(){
   return currentQuantum == 0;
@@ -158,5 +176,7 @@ int get_quantum (struct task_struct *t) {
 void set_quantum (struct task_struct *t, int new_quantum) {
   t->quantum = new_quantum;
 }
+
+
 
 
