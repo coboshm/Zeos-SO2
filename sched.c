@@ -8,7 +8,6 @@
 #include <io.h>
 #include <capsaleres.h>
 
-#define QUANTUM_DEFECTE 20
 
 struct task_struct * idle_task;
 int nextFreePID = 2;
@@ -64,13 +63,22 @@ void init_idle (void)
 	struct list_head * lh = list_first(&freequeue);
 	struct task_struct * tsk = list_head_to_task_struct(lh);
 	list_del(lh);
-    tsk->PID = 0;
+   	tsk->PID = 0;
 	idle_task = tsk;
 	union task_union * tsku = (union task_union *)idle_task;
 	tsku->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 	tsku->stack[KERNEL_STACK_SIZE-2] = 0;
 	idle_task->pointer = &tsku->stack[KERNEL_STACK_SIZE-2];
-  tsku->task.quantum = QUANTUM_DEFECTE;
+  	tsku->task.quantum = QUANTUM_DEFECTE;
+	
+	//Inicialitzem els stats
+	tsk->estats.user_ticks = 0;
+  	tsk->estats.system_ticks = 0;
+  	tsk->estats.blocked_ticks = 0;
+  	tsk->estats.ready_ticks = 0;
+  	tsk->estats.elapsed_total_ticks = get_ticks();
+  	tsk->estats.total_trans = 0;
+  	tsk->estats.remaining_ticks = 0;
 }
 
 void init_task1(void)
@@ -78,12 +86,21 @@ void init_task1(void)
 	struct list_head * lh = list_first(&freequeue);
 	struct task_struct * tsk = list_head_to_task_struct(lh);
 	list_del(lh);
-  tsk->PID = 1;
+  	tsk->PID = 1;
 	set_user_pages(tsk);
-  tsk->quantum = QUANTUM_DEFECTE;
+  	tsk->quantum = QUANTUM_DEFECTE;
 	union task_union * tsku = (union task_union *)tsk;
 	tss.esp0 = &tsku->stack[KERNEL_STACK_SIZE];
 	set_cr3(tsk->dir_pages_baseAddr);
+
+	//Inicialitzem els stats
+	tsk->estats.user_ticks = 0;
+  	tsk->estats.system_ticks = 0;
+  	tsk->estats.blocked_ticks = 0;
+  	tsk->estats.ready_ticks = 0;
+  	tsk->estats.elapsed_total_ticks = get_ticks();
+  	tsk->estats.total_trans = 0;
+  	tsk->estats.remaining_ticks = QUANTUM_DEFECTE;
 }
 
 
@@ -94,6 +111,7 @@ void init_sched(){
     for (i = 0; i < NR_TASKS; ++i) {
         list_add_tail(&(task[i].task.list), &freequeue);
     }
+    currentQuantum = QUANTUM_DEFECTE;
 }
 
 void inner_task_switch(union task_union*t){
@@ -110,15 +128,15 @@ void inner_task_switch(union task_union*t){
 }
 
 void task_switch(union task_union*t){
-       tss.esp0 = &t->stack[KERNEL_STACK_SIZE];
+	tss.esp0 = &t->stack[KERNEL_STACK_SIZE];
        set_cr3(t->task.dir_pages_baseAddr);
-       __asm__ __volatile__(
+	  __asm__ __volatile__(
 		"pushl %esi;"
 		"pushl %edi;"
 		"pushl %ebx;"
       );
-      inner_task_switch(t);
-      __asm__ __volatile__(
+	inner_task_switch(t);
+	 __asm__ __volatile__(
 		"popl %esi;"
 		"popl %edi;"
 		"popl %ebx;"
@@ -149,14 +167,23 @@ void sched_next_rr() {
     tsku_next = (union task_union*)list_head_to_task_struct(lh);
     list_del(lh);
   }
+  
+	//Actualitzar estats quan pasa de ready a run
+  tsku_next->task.estats.remaining_ticks = (unsigned long)QUANTUM_DEFECTE;
   currentQuantum = tsku_next->task.quantum;
+  tsku_next->task.estats.ready_ticks += get_ticks()-tsku_next->task.estats.elapsed_total_ticks;
+  tsku_next->task.estats.elapsed_total_ticks = get_ticks();
   task_switch(tsku_next);
+
 }
 
 // Actulatinza info des proces en execucio
 void update_current_state_rr(struct list_head *dest) {
   struct task_struct * tsk = current();
   struct list_head * lh = &tsk->list;
+	//Actualitzar estats quan pasa de run a ready
+  tsk->estats.system_ticks += get_ticks()-tsk->estats.elapsed_total_ticks;
+  tsk->estats.elapsed_total_ticks = get_ticks(); 
   list_add_tail(lh, dest);
 }
 
