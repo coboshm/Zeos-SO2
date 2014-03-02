@@ -229,7 +229,7 @@ void free_user_pages( struct task_struct *task )
  int pag;
  page_table_entry * process_PT =  get_PT(task);
     /* DATA */
- for (pag=0;pag<NUM_PAG_DATA;pag++){
+ for (pag=0;pag<NUM_PAG_DATA+task->numPagesHeap;pag++){
 	 free_frame(process_PT[PAG_LOG_INIT_DATA_P0+pag].bits.pbase_addr);
          process_PT[PAG_LOG_INIT_DATA_P0+pag].entry = 0;
  }

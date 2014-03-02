@@ -13,8 +13,14 @@
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 #define QUANTUM_DEFECTE 20
+#define KEYBOARDBUFFER_SIZE 512
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED, ST_ZOMBIE };
+
+struct infKey {
+    char *buffer;
+    int toread;
+};
 
 struct task_struct {
   int PID;			/* Process ID */
@@ -24,11 +30,22 @@ struct task_struct {
   unsigned int quantum;
   struct stats estats;
   enum state_t estat;
+  int info_semf;
+  struct infKey info_key;
+  void * inici_heap;
+  int bytesHeap;
+  int numPagesHeap;
 };
 
 union task_union {
   struct task_struct task;
   unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
+};
+
+struct semaphore {
+    int cont;
+    struct list_head tasks;
+    struct task_struct *owner;
 };
 
 extern union task_union task[NR_TASKS]; /* Vector de tasques */
@@ -38,6 +55,8 @@ extern struct task_struct *idle_task;
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
 
 #define INITIAL_ESP       	KERNEL_ESP(&task[1])
+
+#define MAX_NUM_SEMAPHORES 20
 
 /* Inicialitza les dades del proces inicial */
 void init_task1(void);

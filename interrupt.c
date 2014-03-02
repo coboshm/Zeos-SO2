@@ -80,7 +80,6 @@ void setIdt()
   /* Program interrups/exception service routines */
   idtR.base  = (DWord)idt;
   idtR.limit = IDT_ENTRIES * sizeof(Gate) - 1;
-  
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
@@ -95,7 +94,7 @@ void setIdt()
 void clock_routine()
 {
       ++zeos_ticks;
-      //zeos_show_clock();
+      zeos_show_clock();
       update_sched_data_rr();
       if (needs_sched_rr()) {
           //Canvi de contexte
@@ -105,10 +104,10 @@ void clock_routine()
 }
 
 
-void keyboard_routine() {
+/*void keyboard_routine() {
       unsigned char c = inb(0x60);
       if (((c & 0x80) == 0)) {
-                  char cc = char_map[c&0x7f];
+            char cc = char_map[c&0x7f];
             if (cc !='\0') {
                   printc_xy(0, 0, cc);
             } else {
@@ -118,4 +117,33 @@ void keyboard_routine() {
       else {
             printc_xy(0, 0, 'E');
       }
+}*/
+
+void keyboard_routine() {
+      unsigned char c = inb(0x60);
+      if (((c & 0x80) == 0)) {
+            char cc = char_map[c&0x7f];
+            if (cc !='\0') {
+                  procesKey(cc);
+            } else {
+                  procesKey('C');            
+            }
+      }
+      else {
+            procesKey('E');
+      }
+}
+
+void procesKey(char c) {
+    if (KEYBOARDBUFFER_SIZE > nextKey) {
+        keyboardbuffer[(firstKey + nextKey)%KEYBOARDBUFFER_SIZE] = c;
+		++nextKey;
+    }
+    if (!list_empty(&keyboardqueue)) {
+            struct list_head * lh = list_first(&keyboardqueue);
+            struct task_struct *tsk = list_head_to_task_struct(lh);
+            tsk->estat = ST_READY;
+            list_del(lh);        
+            list_add_tail(lh, &readyqueue);
+        }
 }

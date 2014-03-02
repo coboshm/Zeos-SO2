@@ -1,36 +1,36 @@
 GETPID
-test getpid: - 0 
+test getpid: -
 
 FORK 
-fork father result: getpid/exit 1 
-fork child result: getpid/exit 2 
-fork inherit quantum: getpid/exit  3  
-fork father and children do not share quantum: getpid/exit 4
-fork reset stats: getstats/gepid/exit 5 
-fork out of range detection:exit 6
-fork data structures recycling after exit: exit 7
-fork data copy: inherit and do not share with father: getpid/exit 8 
-fork data copy: inherit and do not share with brothers: getpid/exit 9
-fork process hierarchy creation: getpid/exit  10
-TEST PHYSICAL MEMORY INITIALIZATION P0: exit 11
+fork father result: getpid/exit
+fork child result: getpid/exit
+fork inherit quantum: getpid/exit  
+fork father and children do not share quantum: getpid/exit
+fork reset stats: getstats/gepid/exit
+fork out of range detection:exit
+fork data structures recycling after exit: exit
+fork data copy: inherit and do not share with father: getpid/exit
+fork data copy: inherit and do not share with brothers: getpid/exit
+fork process hierarchy creation: getpid/exit
+TEST PHYSICAL MEMORY INITIALIZATION P0: exit
 
 EXIT
-exit(regular process): fork 12
-exit(free data frames): fork 13
+exit(regular process): fork
+exit(free data frames): fork
 
 ROUND ROBIN
-ROUND ROBIN:  fork/get_stats 14
-FULL QUANTUM AFTER CTX SWITCH: fork/exit/getpid/get_stats 15
+ROUND ROBIN:  fork/get_stats
+FULL QUANTUM AFTER CTX SWITCH: fork/exit/getpid/get_stats
 
-GET_STATS 
-GET_STATS(pid parameter is negative): - 16
-GET_STATS(pid parameter does not exist): - 17
-GET_STATS(address parameter is NULL): - 18
-GET_STATS(address parameter in kernel address space): - 19
-GET_STATS(address parameter outside user address space): - 20
-GET_STATS(pid is current process): getpid 21
-GET_STATS(process is ready): getpid/fork 22
-GET_STATS(process is dead): fork/exit 23 
-GET_STATS(process is blocked): fork/exit 24
-GET_STATS INCREASING TICKS FOR BLOCKED PROCESSES: fork/exit 25
-GET_STATS INCREASING TICKS FOR RUNNING PROCESSES: getpid 26
+GET_STATS
+GET_STATS(pid parameter is negative): -
+GET_STATS(pid parameter does not exist): -
+GET_STATS(address parameter is NULL): -
+GET_STATS(address parameter in kernel address space): -
+GET_STATS(address parameter outside user address space): -
+GET_STATS(pid is current process): getpid
+GET_STATS(process is ready): getpid/fork
+GET_STATS(process is dead): fork/exit
+GET_STATS(process is blocked): fork/exit
+GET_STATS INCREASING TICKS FOR BLOCKED PROCESSES: fork/exit
+GET_STATS INCREASING TICKS FOR RUNNING PROCESSES: getpid

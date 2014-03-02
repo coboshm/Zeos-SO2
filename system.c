@@ -20,6 +20,7 @@ unsigned int *p_rdtr = (unsigned int *) KERNEL_START+2;
 long long int zeos_ticks;
 struct list_head freequeue;
 struct list_head readyqueue;
+struct list_head keyboardqueue;
 /************************/
 /** Auxiliar functions **/
 /************************/
